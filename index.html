@@ -131,11 +131,11 @@
     <!-- MAIN GAME UI -->
     <div class="w-full max-w-7xl h-[90vh] flex shadow-2xl rounded-3xl overflow-hidden relative bg-white/10">
         
-        <!-- HUD: Timer & Round Info (Absolute Center Top) -->
-        <div class="absolute top-0 left-0 w-full h-20 z-20 flex justify-center items-start pt-4 pointer-events-none">
-            <div class="bg-white px-6 py-3 rounded-b-2xl shadow-lg flex flex-col items-center border-t-4 border-indigo-600">
-                <div class="text-3xl font-black font-mono text-indigo-900" id="timer-display">03:00</div>
-                <div class="text-xs font-bold text-gray-500 mt-1">SOAL <span id="current-q-num">1</span> / 8</div>
+        <!-- HUD: Timer & Round Info (Absolute Center Bottom) -->
+        <div class="absolute bottom-0 left-0 w-full h-auto z-20 flex justify-center items-end pointer-events-none">
+            <div class="bg-white px-8 py-4 rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.15)] flex flex-col items-center border-t-4 border-indigo-600">
+                <div class="text-4xl font-black font-mono text-indigo-900 tracking-wider" id="timer-display">03:00</div>
+                <div class="text-sm font-bold text-gray-500 mt-1">SOAL <span id="current-q-num">1</span> / 8</div>
             </div>
         </div>
 
