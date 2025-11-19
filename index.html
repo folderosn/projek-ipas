@@ -437,61 +437,86 @@
         }
 
         function handleAnswer(side, selectedIndex) {
-            // Prevent double answering or answering if round inactive
+            // Prevent interaction if round is not active
             if (!gameState.isRoundActive) return;
+            
+            // Prevent multiple answers from the same side
             if (side === 'left' && gameState.leftAnswered) return;
             if (side === 'right' && gameState.rightAnswered) return;
 
             const currentQ = gameState.activeQuestions[gameState.currentQIndex];
             const isCorrect = selectedIndex === currentQ.answer;
-            const feedbackEl = document.getElementById(`feedback-${side}`);
             
-            // Mark as answered
+            // Mark this side as answered
             if (side === 'left') gameState.leftAnswered = true;
             if (side === 'right') gameState.rightAnswered = true;
 
-            // Disable buttons for this side
+            // Disable buttons for THIS side immediately
             const container = document.getElementById(`options-${side}`);
             Array.from(container.children).forEach(btn => {
                 btn.disabled = true;
                 btn.classList.add('opacity-50', 'cursor-not-allowed');
             });
 
-            // Highlight Selected
+            // Highlight Selected Button
             const selectedBtn = document.getElementById(`btn-${side}-${selectedIndex}`);
             selectedBtn.classList.remove('opacity-50');
             
-            // Calculate Score & Show Feedback
             if (isCorrect) {
+                // --- JIKA JAWABAN BENAR ---
+                // 1. Tambah Skor
                 if(side === 'left') gameState.scoreLeft += 5;
                 else gameState.scoreRight += 5;
                 
+                // 2. Feedback Visual
                 selectedBtn.classList.remove(side === 'left' ? 'bg-pink-500' : 'bg-blue-500');
                 selectedBtn.classList.add('bg-green-500');
 
                 playSound('correct');
                 showFeedbackPopup(side, '+5', 'text-green-500');
+
+                // 3. KUNCI TIM LAWAN (Hentikan Ronde)
+                // Karena sudah ada yang benar, tim lain tidak boleh menjawab lagi (Aturan Baru)
+                gameState.isRoundActive = false;
+
+                const otherSide = side === 'left' ? 'right' : 'left';
+                const otherContainer = document.getElementById(`options-${otherSide}`);
+                Array.from(otherContainer.children).forEach(btn => {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                });
+
+                // 4. Lanjut ke Soal Berikutnya
+                setTimeout(() => {
+                    gameState.currentQIndex++;
+                    loadQuestion();
+                }, 2000); // Jeda 2 detik sebelum soal baru
+
             } else {
+                // --- JIKA JAWABAN SALAH ---
+                // 1. Kurangi Skor
                 if(side === 'left') gameState.scoreLeft -= 2;
                 else gameState.scoreRight -= 2;
 
+                // 2. Feedback Visual
                 selectedBtn.classList.remove(side === 'left' ? 'bg-pink-500' : 'bg-blue-500');
                 selectedBtn.classList.add('bg-red-500');
 
                 playSound('wrong');
                 showFeedbackPopup(side, '-2', 'text-red-500');
+
+                // 3. Cek apakah kedua tim sudah menjawab (dan keduanya salah)
+                if (gameState.leftAnswered && gameState.rightAnswered) {
+                    gameState.isRoundActive = false;
+                    setTimeout(() => {
+                        gameState.currentQIndex++;
+                        loadQuestion();
+                    }, 2000);
+                }
+                // Jika tim lawan belum menjawab, mereka MASIH BISA menjawab (tidak dikunci) karena tim pertama salah.
             }
 
             updateScoreUI();
-
-            // Check if both answered
-            if (gameState.leftAnswered && gameState.rightAnswered) {
-                gameState.isRoundActive = false;
-                setTimeout(() => {
-                    gameState.currentQIndex++;
-                    loadQuestion();
-                }, 1500); // Wait 1.5s before next question
-            }
         }
 
         function showFeedbackPopup(side, text, colorClass) {
