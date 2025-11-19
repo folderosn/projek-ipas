@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle IPAS 2025 - Cerdas Cermat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden; /* Mencegah scroll saat bermain */
+        }
+
+        /* Background Image Setup */
+        .bg-school {
+            /* Menggunakan gambar ilustrasi suasana sekolah/siswa SMA putih abu-abu */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1920&auto=format&fit=crop'); 
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .team-pink {
+            background: rgba(255, 192, 203, 0.9);
+            border-right: 4px solid #ec4899;
+        }
+
+        .team-blue {
+            background: rgba(173, 216, 230, 0.9);
+            border-left: 4px solid #3b82f6;
+        }
+
+        /* Interactive Buttons */
+        .option-btn {
+            transition: all 0.2s ease;
+            transform: scale(1);
+        }
+        .option-btn:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Feedback Animations */
+        @keyframes popScore {
+            0% { transform: scale(1); opacity: 0; }
+            50% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+        .score-popup {
+            animation: popScore 1s ease-out forwards;
+        }
+
+        /* Progress Bar */
+        .timer-bar {
+            transition: width 1s linear;
+        }
+
+        /* Loader */
+        #loading-screen {
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="bg-school h-screen w-screen flex flex-col justify-center items-center text-gray-800">
+
+    <!-- Sound Effects (Optional placeholders) -->
+    <audio id="correctSound" src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3"></audio>
+    <audio id="wrongSound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
+    <audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="bg-white p-10 rounded-3xl shadow-2xl text-center max-w-2xl animate__animated animate__zoomIn">
+            <div class="mb-4 text-6xl">🏫</div>
+            <h1 class="text-4xl font-extrabold text-indigo-900 mb-2">BATTLE OF IPAS</h1>
+            <h2 class="text-xl text-gray-600 mb-6">Ujian Tengah Semester Ganjil 2025/2026</h2>
+            
+            <div class="grid grid-cols-2 gap-4 mb-8 text-left bg-gray-100 p-4 rounded-xl">
+                <div class="flex items-center"><i class="fas fa-clock text-indigo-500 mr-2"></i> Durasi: 3 Menit</div>
+                <div class="flex items-center"><i class="fas fa-list-ol text-indigo-500 mr-2"></i> Soal: 8 Butir</div>
+                <div class="flex items-center"><i class="fas fa-check-circle text-green-500 mr-2"></i> Benar: +5 Poin</div>
+                <div class="flex items-center"><i class="fas fa-times-circle text-red-500 mr-2"></i> Salah: -2 Poin</div>
+            </div>
+
+            <button onclick="startGame()" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-12 rounded-full text-xl hover:shadow-lg transform transition hover:-translate-y-1 shadow-indigo-500/50">
+                MULAI PERLOMBAAN
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="game-over-screen" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
+        <div class="bg-white p-10 rounded-3xl shadow-2xl text-center animate__animated animate__bounceIn">
+            <h1 class="text-4xl font-bold mb-4">PERLOMBAAN SELESAI!</h1>
+            
+            <div class="flex justify-center gap-8 mb-8">
+                <div class="text-center p-4 bg-pink-100 rounded-xl border-2 border-pink-500">
+                    <h3 class="text-pink-600 font-bold">TIM MERAH MUDA</h3>
+                    <p id="final-score-left" class="text-4xl font-extrabold">0</p>
+                </div>
+                <div class="text-center p-4 bg-blue-100 rounded-xl border-2 border-blue-500">
+                    <h3 class="text-blue-600 font-bold">TIM BIRU MUDA</h3>
+                    <p id="final-score-right" class="text-4xl font-extrabold">0</p>
+                </div>
+            </div>
+
+            <div id="winner-declaration" class="text-2xl font-bold mb-6 text-yellow-600">
+                <!-- Winner text goes here -->
+            </div>
+
+            <button onclick="location.reload()" class="bg-gray-800 text-white py-3 px-8 rounded-lg font-bold hover:bg-gray-700">
+                Main Lagi
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN GAME UI -->
+    <div class="w-full max-w-7xl h-[90vh] flex shadow-2xl rounded-3xl overflow-hidden relative bg-white/10">
+        
+        <!-- HUD: Timer & Round Info (Absolute Center Top) -->
+        <div class="absolute top-0 left-0 w-full h-20 z-20 flex justify-center items-start pt-4 pointer-events-none">
+            <div class="bg-white px-6 py-3 rounded-b-2xl shadow-lg flex flex-col items-center border-t-4 border-indigo-600">
+                <div class="text-3xl font-black font-mono text-indigo-900" id="timer-display">03:00</div>
+                <div class="text-xs font-bold text-gray-500 mt-1">SOAL <span id="current-q-num">1</span> / 8</div>
+            </div>
+        </div>
+
+        <!-- LEFT TEAM (PINK) -->
+        <div class="w-1/2 h-full flex flex-col team-pink relative">
+            <!-- Score Header -->
+            <div class="p-6 flex justify-between items-center bg-pink-600 text-white shadow-md">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-pink-600 text-2xl font-bold border-2 border-pink-300">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-lg leading-tight">TIM MERAH MUDA</h2>
+                        <span class="text-xs text-pink-100 opacity-80">Siswa A</span>
+                    </div>
+                </div>
+                <div class="text-4xl font-black" id="score-left">0</div>
+            </div>
+
+            <!-- Question Area Left -->
+            <div class="flex-1 p-6 overflow-y-auto flex flex-col justify-center">
+                <div class="bg-white/80 p-6 rounded-2xl shadow-sm min-h-[150px] mb-4 flex items-center">
+                    <p id="question-text-left" class="text-lg font-medium text-gray-800 leading-relaxed">
+                        Menunggu permainan dimulai...
+                    </p>
+                </div>
+
+                <!-- Options Grid -->
+                <div id="options-left" class="grid grid-cols-1 gap-3">
+                    <!-- Options will be injected here -->
+                </div>
+            </div>
+            
+            <!-- Feedback Overlay Left -->
+            <div id="feedback-left" class="absolute inset-0 flex items-center justify-center z-30 pointer-events-none hidden">
+                <!-- JS will inject content -->
+            </div>
+        </div>
+
+        <!-- RIGHT TEAM (BLUE) -->
+        <div class="w-1/2 h-full flex flex-col team-blue relative">
+            <!-- Score Header -->
+            <div class="p-6 flex justify-between items-center bg-blue-600 text-white shadow-md">
+                <div class="text-4xl font-black order-2" id="score-right">0</div>
+                <div class="flex items-center gap-3 order-1">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold border-2 border-blue-300">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="text-right">
+                        <h2 class="font-bold text-lg leading-tight">TIM BIRU MUDA</h2>
+                        <span class="text-xs text-blue-100 opacity-80">Siswa B</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Area Right -->
+            <div class="flex-1 p-6 overflow-y-auto flex flex-col justify-center">
+                <div class="bg-white/80 p-6 rounded-2xl shadow-sm min-h-[150px] mb-4 flex items-center">
+                    <p id="question-text-right" class="text-lg font-medium text-gray-800 leading-relaxed">
+                        Menunggu permainan dimulai...
+                    </p>
+                </div>
+
+                <!-- Options Grid -->
+                <div id="options-right" class="grid grid-cols-1 gap-3">
+                    <!-- Options will be injected here -->
+                </div>
+            </div>
+
+            <!-- Feedback Overlay Right -->
+            <div id="feedback-right" class="absolute inset-0 flex items-center justify-center z-30 pointer-events-none hidden">
+                 <!-- JS will inject content -->
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        // --- DATA SOAL DARI FILE YANG DIUPLOAD ---
+        const questionBank = [
+            {
+                q: "Yang dimaksud dengan komponen biotik di lingkungan pabrik kelapa sawit adalah….",
+                options: ["Suhu udara", "pH air limbah", "Organisme hidup", "Cahaya matahari", "Kelembaban"],
+                answer: 2 // C (0-based index)
+            },
+            {
+                q: "Manakah yang termasuk komponen abiotik di lingkungan pabrik?",
+                options: ["Rumput liar", "Burung", "Mikroorganisme", "Kandungan kimia air", "Serangga air"],
+                answer: 3 // D
+            },
+            {
+                q: "Jika suhu kolam limbah 35°C, manakah komponen biotik di dalamnya?",
+                options: ["Suhu 35°C", "Tanaman air & mikroba", "Jumlah pabrik", "Logam berat", "pH air"],
+                answer: 1 // B
+            },
+            {
+                q: "Jika suhu air kolam terus meningkat, dampak biotik yang mungkin terjadi adalah...",
+                options: ["Tanaman makin lebat", "Mikroba cepat membelah", "Mikroba mati/menurun", "Kimia stabil", "pH normal"],
+                answer: 2 // C
+            },
+            {
+                q: "Vegetasi menguning karena amonia tinggi. Hubungan biotik-abiotik yang tepat adalah...",
+                options: ["Amonia pengaruhi vegetasi", "Vegetasi buat amonia", "Vegetasi subur", "Amonia adalah biotik", "Vegetasi pengaruhi limbah"],
+                answer: 0 // A
+            },
+            {
+                q: "Dampak langsung limbah cair sawit tidak diolah ke badan air adalah...",
+                options: ["Mikroba naik otomatis", "Oksigen terlarut turun", "Tanah membaik", "Zat padat turun", "Cahaya tembus air"],
+                answer: 1 // B
+            },
+            {
+                q: "Akibat membiarkan limbah padat tandan kosong menumpuk terbuka adalah...",
+                options: ["Efisiensi pabrik naik", "Emisi gas rumah kaca", "Udara membaik", "Jadi kimia instan", "Tanaman subur instan"],
+                answer: 1 // B
+            },
+            {
+                q: "Jika air hasil olahan masih berwarna dan bau, analisis paling tepat adalah...",
+                options: ["Pengolahan berhasil", "Tanaman penyebab bau", "Karena matahari", "Tidak berdampak", "Parameter abiotik belum optimal"],
+                answer: 4 // E
+            },
+            {
+                q: "Langkah paling tepat mengolah tandan kosong sawit untuk sekolah adalah...",
+                options: ["Menumpuk saja", "Campur tanah biasa", "Pencacahan & Pengomposan", "Membakar manual", "Merendam di limbah"],
+                answer: 2 // C
+            },
+            {
+                q: "Penerapan nilai tambah (value added) limbah cangkang sawit adalah...",
+                options: ["Dibiarkan membusuk", "Bahan bakar boiler", "Dikubur", "Campur limbah cair", "Buang ke area kosong"],
+                answer: 1 // B
+            },
+            {
+                q: "Jika air masih keruh setelah filtrasi, tindakan yang tepat adalah...",
+                options: ["Kurangi pasir", "Tambah tekanan", "Tambah ketebalan pasir/ijuk", "Hilangkan kerikil", "Tanpa penyaring"],
+                answer: 2 // C
+            },
+            {
+                q: "Fungsi ijuk pada lapisan paling atas filtrasi air berminyak adalah...",
+                options: ["Naikkan suhu", "Kurangi oksigen", "Ubah minyak jadi gas", "Tambah minyak", "Tahan minyak & partikel kasar"],
+                answer: 4 // E
+            },
+            {
+                q: "Penyebab utama besi berkarat saat direndam air garam adalah...",
+                options: ["Besi serap garam", "Reaksi oksidasi meningkat", "Jadi logam lain", "Besi memuai", "Kehabisan elektron"],
+                answer: 1 // B
+            },
+            {
+                q: "Mengapa besi dalam minyak goreng tidak berkarat?",
+                options: ["Minyak kaya oksigen", "Menghambat kontak air & udara", "Perkuat struktur", "Ada anti karat", "Serap ion besi"],
+                answer: 1 // B
+            },
+            {
+                q: "Media yang paling cepat menyebabkan korosi adalah...",
+                options: ["Minyak", "Air Biasa", "Air Garam", "Udara Kering", "Es Batu"],
+                answer: 2 // C
+            },
+            {
+                q: "Hasil pengukuran 145 cm jika diubah ke mm adalah...",
+                options: ["1.450 mm", "14,5 mm", "145.000 mm", "0,145 mm", "14.500 mm"],
+                answer: 0 // A
+            },
+            {
+                q: "Panjang 2,3 m jika diubah ke cm adalah...",
+                options: ["230 cm", "2.300 cm", "23 cm", "0,23 cm", "203 cm"],
+                answer: 0 // A
+            },
+            {
+                q: "Tinggi 98 cm jika ditulis dalam meter adalah...",
+                options: ["9,8 m", "0,098 m", "0,98 m", "98,0 m", "980 m"],
+                answer: 2 // C
+            },
+            {
+                q: "Energi potensial apel 0,2 kg di ketinggian 1,5 m (g=10) adalah...",
+                options: ["1 J", "2 J", "3 J", "4 J", "5 J"],
+                answer: 2 // C (0.2 * 10 * 1.5 = 3)
+            },
+            {
+                q: "Komponen PLTS yang mengatur pengisian baterai agar tidak overcharge...",
+                options: ["Panel surya", "Inverter", "Battery bank", "Solar charge controller", "Kabel DC"],
+                answer: 3 // D
+            }
+        ];
+
+        // --- GAME LOGIC ---
+        
+        let gameState = {
+            currentQIndex: 0,
+            activeQuestions: [], // Will hold the 8 random questions
+            scoreLeft: 0,
+            scoreRight: 0,
+            timeLeft: 180, // 3 minutes in seconds
+            timerInterval: null,
+            leftAnswered: false,
+            rightAnswered: false,
+            isRoundActive: false
+        };
+
+        const MAX_QUESTIONS = 8;
+
+        // Helper: Shuffle Array
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function startGame() {
+            // Reset State
+            gameState.scoreLeft = 0;
+            gameState.scoreRight = 0;
+            gameState.timeLeft = 180;
+            gameState.currentQIndex = 0;
+            gameState.leftAnswered = false;
+            gameState.rightAnswered = false;
+
+            // Update UI
+            document.getElementById('score-left').innerText = '0';
+            document.getElementById('score-right').innerText = '0';
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+
+            // Select 8 Random Questions
+            const shuffled = shuffle([...questionBank]);
+            gameState.activeQuestions = shuffled.slice(0, MAX_QUESTIONS);
+
+            // Start Timer
+            startTimer();
+
+            // Load First Question
+            loadQuestion();
+        }
+
+        function startTimer() {
+            const timerDisplay = document.getElementById('timer-display');
+            
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+
+            gameState.timerInterval = setInterval(() => {
+                gameState.timeLeft--;
+
+                // Format Time MM:SS
+                const m = Math.floor(gameState.timeLeft / 60);
+                const s = gameState.timeLeft % 60;
+                timerDisplay.innerText = `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+
+                // Change color if low time
+                if (gameState.timeLeft < 30) {
+                    timerDisplay.classList.add('text-red-600');
+                    timerDisplay.classList.add('animate-pulse');
+                }
+
+                if (gameState.timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function loadQuestion() {
+            if (gameState.currentQIndex >= MAX_QUESTIONS) {
+                endGame();
+                return;
+            }
+
+            const qData = gameState.activeQuestions[gameState.currentQIndex];
+            gameState.isRoundActive = true;
+            gameState.leftAnswered = false;
+            gameState.rightAnswered = false;
+
+            // Update HUD
+            document.getElementById('current-q-num').innerText = gameState.currentQIndex + 1;
+
+            // Render Left
+            document.getElementById('question-text-left').innerText = qData.q;
+            renderOptions('left', qData);
+            document.getElementById('feedback-left').classList.add('hidden');
+
+            // Render Right
+            document.getElementById('question-text-right').innerText = qData.q;
+            renderOptions('right', qData);
+            document.getElementById('feedback-right').classList.add('hidden');
+        }
+
+        function renderOptions(side, qData) {
+            const container = document.getElementById(`options-${side}`);
+            container.innerHTML = '';
+            
+            // Color theme
+            const baseColor = side === 'left' ? 'bg-pink-500 hover:bg-pink-600' : 'bg-blue-500 hover:bg-blue-600';
+
+            qData.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn w-full p-3 text-left rounded-lg text-white font-medium text-sm shadow-sm ${baseColor}`;
+                btn.innerHTML = `<span class="font-bold mr-2">${String.fromCharCode(65 + index)}.</span> ${opt}`;
+                btn.onclick = () => handleAnswer(side, index);
+                btn.id = `btn-${side}-${index}`;
+                container.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(side, selectedIndex) {
+            // Prevent double answering or answering if round inactive
+            if (!gameState.isRoundActive) return;
+            if (side === 'left' && gameState.leftAnswered) return;
+            if (side === 'right' && gameState.rightAnswered) return;
+
+            const currentQ = gameState.activeQuestions[gameState.currentQIndex];
+            const isCorrect = selectedIndex === currentQ.answer;
+            const feedbackEl = document.getElementById(`feedback-${side}`);
+            
+            // Mark as answered
+            if (side === 'left') gameState.leftAnswered = true;
+            if (side === 'right') gameState.rightAnswered = true;
+
+            // Disable buttons for this side
+            const container = document.getElementById(`options-${side}`);
+            Array.from(container.children).forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+
+            // Highlight Selected
+            const selectedBtn = document.getElementById(`btn-${side}-${selectedIndex}`);
+            selectedBtn.classList.remove('opacity-50');
+            
+            // Calculate Score & Show Feedback
+            if (isCorrect) {
+                if(side === 'left') gameState.scoreLeft += 5;
+                else gameState.scoreRight += 5;
+                
+                selectedBtn.classList.remove(side === 'left' ? 'bg-pink-500' : 'bg-blue-500');
+                selectedBtn.classList.add('bg-green-500');
+
+                playSound('correct');
+                showFeedbackPopup(side, '+5', 'text-green-500');
+            } else {
+                if(side === 'left') gameState.scoreLeft -= 2;
+                else gameState.scoreRight -= 2;
+
+                selectedBtn.classList.remove(side === 'left' ? 'bg-pink-500' : 'bg-blue-500');
+                selectedBtn.classList.add('bg-red-500');
+
+                playSound('wrong');
+                showFeedbackPopup(side, '-2', 'text-red-500');
+            }
+
+            updateScoreUI();
+
+            // Check if both answered
+            if (gameState.leftAnswered && gameState.rightAnswered) {
+                gameState.isRoundActive = false;
+                setTimeout(() => {
+                    gameState.currentQIndex++;
+                    loadQuestion();
+                }, 1500); // Wait 1.5s before next question
+            }
+        }
+
+        function showFeedbackPopup(side, text, colorClass) {
+            const fb = document.getElementById(`feedback-${side}`);
+            fb.innerHTML = `<div class="text-8xl font-black ${colorClass} score-popup drop-shadow-lg bg-white rounded-full w-32 h-32 flex items-center justify-center border-4 border-gray-200">${text}</div>`;
+            fb.classList.remove('hidden');
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score-left').innerText = gameState.scoreLeft;
+            document.getElementById('score-right').innerText = gameState.scoreRight;
+        }
+
+        function playSound(type) {
+            const audio = document.getElementById(`${type}Sound`);
+            if(audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log("Audio play failed (user interaction needed first)"));
+            }
+        }
+
+        function endGame() {
+            clearInterval(gameState.timerInterval);
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            
+            document.getElementById('final-score-left').innerText = gameState.scoreLeft;
+            document.getElementById('final-score-right').innerText = gameState.scoreRight;
+
+            const winnerDiv = document.getElementById('winner-declaration');
+            playSound('win');
+
+            if (gameState.scoreLeft > gameState.scoreRight) {
+                winnerDiv.innerHTML = `<span class="text-pink-600 text-4xl">🏆 TIM MERAH MUDA MENANG! 🏆</span>`;
+            } else if (gameState.scoreRight > gameState.scoreLeft) {
+                winnerDiv.innerHTML = `<span class="text-blue-600 text-4xl">🏆 TIM BIRU MUDA MENANG! 🏆</span>`;
+            } else {
+                winnerDiv.innerHTML = `<span class="text-gray-600 text-4xl">🤝 SERI! 🤝</span>`;
+            }
+        }
+
+    </script>
+</body>
+</html>
